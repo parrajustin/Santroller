@@ -2,7 +2,7 @@
 
 These instructions will guide you through compiling the `src/pico/main.cpp` firmware and uploading it to a Raspberry Pi Pico using the command line on a macOS device.
 
-**Important Note:** This project has a complex build system that is tightly coupled to the **Santroller Configurator** GUI tool. Building directly from the source code without using this tool is a non-trivial task. The following instructions will guide you through a manual build process, which requires several workarounds and the creation of a manual configuration file.
+**Important Note:** This project has a complex build system that is tightly coupled to the **Santroller Configurator** GUI tool. Building directly from the source code without using this tool is a non-trivial task. The following instructions will guide you through a manual build process, which requires several workarounds and a manual configuration.
 
 ## Prerequisites
 
@@ -38,64 +38,77 @@ Add this line to your shell's profile file (e.g., `~/.zshrc` or `~/.bash_profile
 
 ## Configuration
 
-The firmware will not compile without a valid configuration. The Santroller Configurator tool normally generates this automatically. For a manual build, you must create a configuration file by hand.
+The firmware will not compile without a valid configuration. The Santroller Configurator tool normally generates this automatically. For a manual command-line build, you must provide the configuration as build flags in the `platformio.ini` file.
 
-1.  **Create the `config_data.h` file:**
-    Create a new file located at `include/config_data.h`.
+Open `platformio.ini` and locate the `[pico_parent]` section. Modify the `build_flags` to include the following definitions. This minimal configuration will build the firmware as a generic Xbox-style gamepad.
 
-2.  **Populate the file:**
-    Paste the following content into the `include/config_data.h` file. This is a minimal, working configuration that will allow the firmware to compile as a generic gamepad.
-
-    ```c
-    #pragma once
-
-    // This is a manually generated config file to allow for a from-source build
-    // without the official Santroller Configurator tool.
-
-    // --- Batch 1: From initial compilation failures ---
-    #define DEVICE_TYPE 1 // 1 = GAMEPAD
-    #define CONFIGURABLE_BLOBS
-
-    // --- Batch 2: From second wave of failures ---
-    #define PIN_INIT
-    #define WINDOWS_USES_XINPUT 0
-    #define LED_COUNT 0
-    #define LED_COUNT_PERIPHERAL 0
-    #define SLEEP_PIN -1
-    #define SLEEP_ACTIVE_HIGH 0
-
-    // --- Batch 3: From third wave of failures ---
-    #define LOW_PASS_ALPHA 0.5
-    #define ARDWIINO_BOARD "Pico"
-    #define HANDLE_AUTH_LED
-    #define HANDLE_PLAYER_LED
-    #define HANDLE_LIGHTBAR_LED
-    #define HANDLE_RUMBLE
-    #define HANDLE_RUMBLE_EXPANDED
-    #define HANDLE_KEYBOARD_LED
-    #define CONFIGURATION_LEN 0
-
-    // --- Batch 4: From fourth wave of failures ---
-    #define LED_BRIGHTNESS 100
-    #define DIGITAL_COUNT 0
-    #define LED_DEBOUNCE_COUNT 0
-    #define LED_INIT
-    #define WINDOWS_TURNTABLE_FULLRANGE 0
-    #define TICK_SHARED
-    #define TICK_DETECTION
-    #define INPUT_QUEUE 0
-    #define TICK_OG_XBOX
-    #define TICK_XINPUT
-    #define TICK_PS4
-    #define TICK_PC
-    #define TICK_PS3_WITHOUT_CAPTURE
-    #define TICK_PS3
-    #define SWAP_SWITCH_FACE_BUTTONS 0
-    #define TICK_RESET
-    #define SLEEP_INACTIVITY_TIMEOUT_SEC 0
-    #define POLL_RATE 0
-    #define RPCS3_COMPAT 0
-    ```
+```ini
+build_flags =
+	-DPIO_USB_DP_PIN_DEFAULT=20
+	-Isrc/pico
+	-DPIO_FRAMEWORK_ARDUINO_NO_USB
+	; Core Configuration
+	; Sets the primary device type. 1 = GAMEPAD
+	-DDEVICE_TYPE=1
+	; Allows build without a static config array by using pointers instead.
+	-DCONFIGURABLE_BLOBS
+	; Hardware Pin & LED Configuration
+	; Placeholder for pin initialization code.
+	-DPIN_INIT=
+	; Placeholder for LED initialization code.
+	-DLED_INIT=
+	; Number of standard LEDs. 0 = disabled.
+	-DLED_COUNT=0
+	; Number of LEDs on a peripheral. 0 = disabled.
+	-DLED_COUNT_PERIPHERAL=0
+	; Number of LEDs that require debouncing.
+	-DLED_DEBOUNCE_COUNT=0
+	; Default LED brightness (0-255).
+	-DLED_BRIGHTNESS=100
+	; GPIO pin for sleep mode. -1 = disabled.
+	-DSLEEP_PIN=-1
+	; Logic level for sleep pin.
+	-DSLEEP_ACTIVE_HIGH=0
+	; Inactivity timeout for auto-sleep in seconds. 0 = disabled.
+	-DSLEEP_INACTIVITY_TIMEOUT_SEC=0
+	; Input Processing Configuration
+	; Number of digital button inputs. 16 is a safe value for a generic gamepad.
+	-DDIGITAL_COUNT=16
+	; Use an input queue. 0 = disabled.
+	-DINPUT_QUEUE=0
+	; USB polling rate in ms. 1 = 1000Hz.
+	-DPOLL_RATE=1
+	; Low-pass filter alpha for accelerometer.
+	-DLOW_PASS_ALPHA=0.5
+	; Swap A/B and X/Y buttons for Nintendo layout. 0 = disabled.
+	-DSWAP_SWITCH_FACE_BUTTONS=0
+	; Controller Emulation & Miscellaneous
+	; Board name for USB descriptor.
+	-DARDWIINO_BOARD="\"Pico\""
+	; Length of the config array, used for bounds checking.
+	-DCONFIGURATION_LEN=0
+	; Use XInput protocol on Windows. 1 = enabled.
+	-DWINDOWS_USES_XINPUT=1
+	; Enable RPCS3 (PS3 emulator) compatibility workarounds. 0 = disabled.
+	-DRPCS3_COMPAT=0
+	; Placeholders for protocol-specific tick functions.
+	-DTICK_SHARED=
+	-DTICK_DETECTION=
+	-DTICK_OG_XBOX=
+	-DTICK_XINPUT=
+	-DTICK_PS4=
+	-DTICK_PC=
+	-DTICK_PS3_WITHOUT_CAPTURE=
+	-DTICK_PS3=
+	-DTICK_RESET=
+	; Placeholders for LED and rumble handlers.
+	-DHANDLE_AUTH_LED=
+	-DHANDLE_PLAYER_LED=
+	-DHANDLE_LIGHTBAR_LED=
+	-DHANDLE_RUMBLE=
+	-DHANDLE_RUMBLE_EXPANDED=
+	-DHANDLE_KEYBOARD_LED=
+```
 
 ## Compiling the Firmware
 
@@ -115,11 +128,7 @@ With the prerequisites and configuration in place, you can now compile the firmw
 
 ### Build Notes & Workarounds
 
-During the process of creating these instructions, several bugs in the project's build scripts were identified and fixed. The fixes have been applied directly to the repository. These included:
-*   Fixing a dependency issue with the `psutil` Python library.
-*   Correcting the path to the `pioasm` tool by compiling it from source and updating the build script.
-
-If you encounter build issues, they may be related to these scripts.
+During the process of creating these instructions, a bug in the project's build scripts (`ardwiino_script_pre.py`) was identified and fixed. The fix has been applied directly to the repository. If you encounter build issues, they may be related to this script.
 
 ## Uploading to the Raspberry Pi Pico
 
